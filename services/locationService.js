@@ -1,5 +1,6 @@
 import * as Location from "expo-location";
 import { Alert, Linking } from "react-native";
+import axios from "axios";
 
 export const requestLocationPermission = async () => {
   try {
@@ -58,5 +59,30 @@ export const getCurrentLocation = async () => {
   } catch (error) {
     console.log("Error getting location:", error);
     return null;
+  }
+};
+
+
+export const searchLocations = async (query) => {
+  try {
+    const response = await axios.get(
+      `https://nominatim.openstreetmap.org/search`,
+      {
+        params: {
+          q: query,
+          format: "json",
+          addressdetails: 1,
+          limit: 5,
+        },
+        headers: {
+          "User-Agent": "destination-alarm-app",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.log("Location search error:", error);
+    return [];
   }
 };
