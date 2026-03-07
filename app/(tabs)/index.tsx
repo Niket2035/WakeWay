@@ -1,32 +1,28 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-
-import { Link } from 'expo-router';
+import { requestLocationPermission, getCurrentLocation } from '@/services/locationService';
+import { useEffect } from 'react';
+import { Text, TextInput, View } from 'react-native';
 
 export default function HomeScreen() {
+   useEffect(() => {
+    const initLocation = async () => {
+      const permissionGranted = await requestLocationPermission();
+
+      if (!permissionGranted) return;
+
+      const location = await getCurrentLocation();
+
+      console.log("User Location:", location);
+    };
+
+    initLocation();
+  }, []);
   return (
-    <div>
-      home Screen
-    </div>
+    <View style={{flex: 1,  padding: 20,marginTop: 50}}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Enter your destination</Text>
+      <TextInput
+        placeholder="Destination"
+        style={{ height: 40, borderColor: 'gray', borderWidth: 1, marginTop: 10, paddingHorizontal: 10 ,borderRadius: 5}}
+      />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
