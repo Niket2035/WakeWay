@@ -2,12 +2,26 @@ import * as Location from "expo-location";
 import { Alert, Linking } from "react-native";
 import axios from "axios";
 
+const LOCATION_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
+
+const normalizeCoordinates = (coords) => {
+  if (
+    typeof coords?.latitude !== "number" ||
+    typeof coords?.longitude !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+  };
+};
+
 export const requestLocationPermission = async () => {
   try {
-    // Check existing permission
     let { status } = await Location.getForegroundPermissionsAsync();
 
-    // If not granted, ask user
     if (status !== "granted") {
       const permission = await Location.requestForegroundPermissionsAsync();
       status = permission.status;
@@ -52,24 +66,20 @@ export const getCurrentLocation = async () => {
       accuracy: Location.Accuracy.High,
     });
 
-    return {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-    };
+    return normalizeCoordinates(location.coords);
   } catch (error) {
     console.log("Error getting location:", error);
     return null;
   }
 };
 
-
 export const searchLocations = async (query) => {
   try {
     const response = await axios.get(
-      `https://nominatim.openstreetmap.org/search`,
+      LOCATION_SEARCH_URL,
       {
         params: {
-          q: query,
+          q: query.trim(),
           format: "json",
           addressdetails: 1,
           limit: 5,
@@ -77,11 +87,22 @@ export const searchLocations = async (query) => {
         headers: {
           "User-Agent": "destination-alarm-app",
         },
+        timeout: 10000,
       }
     );
 
-    return response.data;
-    
+    return response.data
+      .map((location) => ({
+        place_id: location.place_id,
+        display_name: location.display_name,
+        latitude: Number(location.lat),
+        longitude: Number(location.lon),
+      }))
+      .filter(
+        (location) =>
+          Number.isFinite(location.latitude) &&
+          Number.isFinite(location.longitude)
+      );
   } catch (error) {
     console.log("Location search error:", error);
     return [];
