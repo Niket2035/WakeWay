@@ -44,6 +44,8 @@ export default function HomeScreen() {
     }
 
     const locations = await searchLocations(text);
+    console.log(locations.lat);
+    console.log(locations.lon);
     setResults(locations);
   };
 

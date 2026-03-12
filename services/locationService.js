@@ -81,6 +81,7 @@ export const searchLocations = async (query) => {
     );
 
     return response.data;
+    
   } catch (error) {
     console.log("Location search error:", error);
     return [];
