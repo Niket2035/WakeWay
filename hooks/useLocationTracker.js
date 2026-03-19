@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
+import { Platform } from "react-native";
 import {
   getCurrentLocation,
   requestLocationPermission,
@@ -26,8 +27,17 @@ export const useLocationTracker = (destination, options = {}) => {
   destinationRef.current = destination;
 
   const clearWatcher = () => {
-    watcherRef.current?.remove();
+    const activeWatcher = watcherRef.current;
     watcherRef.current = null;
+
+    if (activeWatcher?.type === "web") {
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        navigator.geolocation.clearWatch(activeWatcher.watchId);
+      }
+    } else {
+      activeWatcher?.subscription?.remove?.();
+    }
+
     setIsTracking(false);
   };
 
@@ -68,6 +78,23 @@ export const useLocationTracker = (destination, options = {}) => {
 
   const stopTracking = () => {
     clearWatcher();
+  };
+
+  const handleLocationUpdate = (coords) => {
+    const userLocation = {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    };
+
+    const remainingDistance = updateDistanceFromLocation(userLocation);
+
+    if (
+      remainingDistance !== null &&
+      remainingDistance <= radius &&
+      !hasTriggeredRef.current
+    ) {
+      void handleDestinationReached(userLocation, remainingDistance);
+    }
   };
 
   const handleDestinationReached = async (location, remainingDistance) => {
@@ -113,29 +140,51 @@ export const useLocationTracker = (destination, options = {}) => {
     }
 
     try {
-      watcherRef.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-          distanceInterval: 10,
-        },
-        (locationUpdate) => {
-          const userLocation = {
-            latitude: locationUpdate.coords.latitude,
-            longitude: locationUpdate.coords.longitude,
-          };
-
-          const remainingDistance = updateDistanceFromLocation(userLocation);
-
-          if (
-            remainingDistance !== null &&
-            remainingDistance <= radius &&
-            !hasTriggeredRef.current
-          ) {
-            void handleDestinationReached(userLocation, remainingDistance);
-          }
+      if (Platform.OS === "web") {
+        if (typeof navigator === "undefined" || !navigator.geolocation) {
+          setError("Live location tracking is not supported in this browser.");
+          return false;
         }
-      );
+
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            handleLocationUpdate(position.coords);
+          },
+          (trackingError) => {
+            console.log("Web location tracking error:", trackingError);
+            clearWatcher();
+            setError(
+              "Unable to continue live location tracking in this browser."
+            );
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 15000,
+          }
+        );
+
+        watcherRef.current = {
+          type: "web",
+          watchId,
+        };
+      } else {
+        const subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 5000,
+            distanceInterval: 10,
+          },
+          (locationUpdate) => {
+            handleLocationUpdate(locationUpdate.coords);
+          }
+        );
+
+        watcherRef.current = {
+          type: "expo",
+          subscription,
+        };
+      }
 
       setError("");
       setIsTracking(true);
