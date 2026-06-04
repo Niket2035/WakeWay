@@ -1,8 +1,8 @@
+import axios from "axios";
 import * as Location from "expo-location";
 import { Alert, Linking } from "react-native";
-import axios from "axios";
 
-const LOCATION_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
+const LOCATION_SEARCH_URL = process.env.EXPO_PUBLIC_LOCATION_SEARCH_URL;
 
 const normalizeCoordinates = (coords) => {
   if (
@@ -30,7 +30,7 @@ export const requestLocationPermission = async () => {
     if (status !== "granted") {
       Alert.alert(
         "Location Permission Required",
-        "Please enable location permission to use this feature."
+        "Please enable location permission to use this feature.",
       );
       return false;
     }
@@ -48,7 +48,7 @@ export const requestLocationPermission = async () => {
             onPress: () => Linking.openSettings(),
           },
           { text: "Cancel" },
-        ]
+        ],
       );
       return false;
     }
@@ -75,22 +75,20 @@ export const getCurrentLocation = async () => {
 
 export const searchLocations = async (query) => {
   try {
-    const response = await axios.get(
-      LOCATION_SEARCH_URL,
-      {
-        params: {
-          q: query.trim(),
-          format: "json",
-          addressdetails: 1,
-          limit: 5,
-        },
-        headers: {
-          "User-Agent": "destination-alarm-app",
-        },
-        timeout: 10000,
-      }
-    );
+    const response = await axios.get(LOCATION_SEARCH_URL, {
+      params: {
+        q: query.trim(),
+        format: "json",
+        addressdetails: 1,
+        limit: 5,
+      },
+      headers: {
+        "User-Agent": "destination-alarm-app",
+      },
+      timeout: 10000,
+    });
 
+    console.log("Location search results:", response.data);
     return response.data
       .map((location) => ({
         place_id: location.place_id,
@@ -101,7 +99,7 @@ export const searchLocations = async (query) => {
       .filter(
         (location) =>
           Number.isFinite(location.latitude) &&
-          Number.isFinite(location.longitude)
+          Number.isFinite(location.longitude),
       );
   } catch (error) {
     console.log("Location search error:", error);
