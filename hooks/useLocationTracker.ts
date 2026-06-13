@@ -1,24 +1,53 @@
-import { useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
+import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
-import {
-  getCurrentLocation,
-  requestLocationPermission,
-} from "../services/locationService";
 import { prepareAlarm, triggerAlarm } from "../services/alarmService";
+import {
+    getCurrentLocation,
+    requestLocationPermission,
+} from "../services/locationService";
+import { DestinationResult, TrackerLocation } from "../types/location";
 import { calculateDistance } from "../utils/distanceCalculator";
 
 export const DESTINATION_RADIUS_METERS = 300;
 
-export const useLocationTracker = (destination, options = {}) => {
+type UseLocationTrackerOptions = {
+  radius?: number;
+  onReach?: (event: {
+    location: TrackerLocation;
+    distance: number;
+    destination: DestinationResult | null;
+  }) => void;
+};
+
+type UseLocationTrackerReturn = {
+  currentLocation: TrackerLocation | null;
+  distance: number | null;
+  error: string;
+  hasReachedDestination: boolean;
+  isTracking: boolean;
+  radius: number;
+  startTracking: () => Promise<boolean | "reached" | "tracking">;
+  stopTracking: () => void;
+  syncCurrentLocation: () => Promise<TrackerLocation | null>;
+};
+
+/**
+ * Hook to track device location and notify when user reaches a destination.
+ */
+export const useLocationTracker = (
+  destination: DestinationResult | null,
+  options: UseLocationTrackerOptions = {},
+): UseLocationTrackerReturn => {
   const radius = options.radius ?? DESTINATION_RADIUS_METERS;
   const onReachRef = useRef(options.onReach);
-  const destinationRef = useRef(destination);
-  const watcherRef = useRef(null);
+  const destinationRef = useRef<DestinationResult | null>(destination);
+  const watcherRef = useRef<any>(null);
   const hasTriggeredRef = useRef(false);
 
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [distance, setDistance] = useState(null);
+  const [currentLocation, setCurrentLocation] =
+    useState<TrackerLocation | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [hasReachedDestination, setHasReachedDestination] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +70,7 @@ export const useLocationTracker = (destination, options = {}) => {
     setIsTracking(false);
   };
 
-  const updateDistanceFromLocation = (location) => {
+  const updateDistanceFromLocation = (location: TrackerLocation) => {
     setCurrentLocation(location);
 
     if (!destinationRef.current) {
@@ -49,13 +78,16 @@ export const useLocationTracker = (destination, options = {}) => {
       return null;
     }
 
-    const remainingDistance = calculateDistance(location, destinationRef.current);
+    const remainingDistance = calculateDistance(location, {
+      latitude: destinationRef.current.latitude,
+      longitude: destinationRef.current.longitude,
+    });
     setDistance(remainingDistance);
 
     return remainingDistance;
   };
 
-  const syncCurrentLocation = async () => {
+  const syncCurrentLocation = async (): Promise<TrackerLocation | null> => {
     const permissionGranted = await requestLocationPermission();
 
     if (!permissionGranted) {
@@ -80,8 +112,11 @@ export const useLocationTracker = (destination, options = {}) => {
     clearWatcher();
   };
 
-  const handleLocationUpdate = (coords) => {
-    const userLocation = {
+  const handleLocationUpdate = (coords: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    const userLocation: TrackerLocation = {
       latitude: coords.latitude,
       longitude: coords.longitude,
     };
@@ -97,7 +132,10 @@ export const useLocationTracker = (destination, options = {}) => {
     }
   };
 
-  const handleDestinationReached = async (location, remainingDistance) => {
+  const handleDestinationReached = async (
+    location: TrackerLocation,
+    remainingDistance: number,
+  ) => {
     if (hasTriggeredRef.current) {
       return;
     }
@@ -114,7 +152,7 @@ export const useLocationTracker = (destination, options = {}) => {
     });
   };
 
-  const startTracking = async () => {
+  const startTracking = async (): Promise<boolean | "reached" | "tracking"> => {
     if (!destinationRef.current) {
       setError("Select a destination before starting tracking.");
       return false;
@@ -148,20 +186,21 @@ export const useLocationTracker = (destination, options = {}) => {
 
         const watchId = navigator.geolocation.watchPosition(
           (position) => {
-            handleLocationUpdate(position.coords);
+            handleLocationUpdate(position.coords as any);
           },
           (trackingError) => {
+            // eslint-disable-next-line no-console
             console.log("Web location tracking error:", trackingError);
             clearWatcher();
             setError(
-              "Unable to continue live location tracking in this browser."
+              "Unable to continue live location tracking in this browser.",
             );
           },
           {
             enableHighAccuracy: true,
             maximumAge: 0,
             timeout: 15000,
-          }
+          },
         );
 
         watcherRef.current = {
@@ -176,8 +215,8 @@ export const useLocationTracker = (destination, options = {}) => {
             distanceInterval: 10,
           },
           (locationUpdate) => {
-            handleLocationUpdate(locationUpdate.coords);
-          }
+            handleLocationUpdate(locationUpdate.coords as any);
+          },
         );
 
         watcherRef.current = {
@@ -190,6 +229,7 @@ export const useLocationTracker = (destination, options = {}) => {
       setIsTracking(true);
       return "tracking";
     } catch (trackingError) {
+      // eslint-disable-next-line no-console
       console.log("Location tracking error:", trackingError);
       clearWatcher();
       setError("Unable to start live location tracking.");

@@ -1,6 +1,14 @@
 import { getDistance } from "geolib";
+import { TrackerLocation } from "../types/location";
 
-export const calculateDistance = (user, destination) => {
+/**
+ * Calculate distance (in meters) between user and destination.
+ * Returns `null` when inputs are invalid.
+ */
+export const calculateDistance = (
+  user: TrackerLocation | null,
+  destination: TrackerLocation | null,
+): number | null => {
   if (
     typeof user?.latitude !== "number" ||
     typeof user?.longitude !== "number" ||
