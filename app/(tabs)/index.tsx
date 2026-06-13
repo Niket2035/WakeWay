@@ -8,8 +8,8 @@ import { Alert, StyleSheet, View } from "react-native";
 import { DestinationResult } from "@/types/location";
 import ActionButtons from "../../components/ActionButtons";
 import DestinationSearch from "../../components/DestinationSearch";
-import HeroCard from "../../components/HeroCard";
 import TrackingCard from "../../components/TrackingCard";
+import PageHeader from "@/components/PageHeader";
 
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
@@ -128,8 +128,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      <HeroCard />
-
+       <PageHeader title="Wake Way" />
+  
       <DestinationSearch
         query={query}
         onChangeText={handleQueryChange}
@@ -168,5 +168,6 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
+    margin: 20,
   },
 });
