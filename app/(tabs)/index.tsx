@@ -69,7 +69,9 @@ export default function HomeScreen() {
       }
 
       startTransition(() => {
-        setResults(locations);
+        setResults(
+          locations.map((l) => ({ ...l, place_id: Number(l.place_id) })),
+        );
       });
       setIsSearching(false);
       setSearchMessage(
