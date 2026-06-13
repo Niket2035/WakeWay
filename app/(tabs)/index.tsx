@@ -5,11 +5,11 @@ import { startTransition, useDeferredValue, useEffect, useState } from "react";
 
 import { Alert, StyleSheet, View } from "react-native";
 
+import PageHeader from "@/components/PageHeader";
 import { DestinationResult } from "@/types/location";
 import ActionButtons from "../../components/ActionButtons";
 import DestinationSearch from "../../components/DestinationSearch";
 import TrackingCard from "../../components/TrackingCard";
-import PageHeader from "@/components/PageHeader";
 
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
@@ -25,6 +25,7 @@ export default function HomeScreen() {
 
   const {
     currentLocation,
+    currentLocationName,
     distance,
     error,
     hasReachedDestination,
@@ -128,8 +129,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-       <PageHeader title="Wake Way" />
-  
+      <PageHeader title="Wake Way" />
+
       <DestinationSearch
         query={query}
         onChangeText={handleQueryChange}
@@ -143,6 +144,7 @@ export default function HomeScreen() {
       <View style={styles.card}>
         <TrackingCard
           currentLocation={currentLocation}
+          currentLocationName={currentLocationName}
           distance={distance}
           hasReachedDestination={hasReachedDestination}
           isTracking={isTracking}

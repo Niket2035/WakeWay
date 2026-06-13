@@ -24,7 +24,6 @@ const normalizeCoordinates = (
   };
 };
 
-
 export const requestLocationPermission = async () => {
   try {
     let { status } = await Location.getForegroundPermissionsAsync();
@@ -62,12 +61,10 @@ export const requestLocationPermission = async () => {
 
     return true;
   } catch (error) {
-   
     console.log("Location permission error:", error);
     return false;
   }
 };
-
 
 export const getCurrentLocation = async (): Promise<Coords | null> => {
   try {
@@ -82,13 +79,46 @@ export const getCurrentLocation = async (): Promise<Coords | null> => {
   }
 };
 
+const formatLocationName = (location: Location.LocationGeocodedAddress) => {
+  const parts = [
+    location.name,
+    location.city,
+    location.region,
+    location.country,
+  ]
+    .filter(
+      (part): part is string =>
+        typeof part === "string" && part.trim().length > 0,
+    )
+    .map((part) => part.trim());
+
+  return parts.length > 0 ? parts.join(", ") : null;
+};
+
+// take an longitude and latitude and return a location name
+export const getCurrentLocationName = async (
+  coords: Coords,
+): Promise<string | null> => {
+  try {
+    const result = await Location.reverseGeocodeAsync(coords);
+
+    if (!result.length) {
+      return null;
+    }
+
+    return formatLocationName(result[0]);
+  } catch (error) {
+    console.log("Error reverse geocoding location:", error);
+    return null;
+  }
+};
+
 export type SearchLocation = {
   place_id: number | string;
   display_name: string;
   latitude: number;
   longitude: number;
 };
-
 
 export const searchLocations = async (
   query: string,
@@ -126,7 +156,6 @@ export const searchLocations = async (
           Number.isFinite(location.longitude),
       );
   } catch (error) {
-   
     console.log("Location search error:", error);
     return [];
   }

@@ -1,20 +1,14 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import {
-  formatCoordinate,
-  formatDistance,
-} from "../utils/formatters";
+import { formatDistance } from "../utils/formatters";
 
 interface Props {
   currentLocation: {
     latitude: number;
     longitude: number;
   } | null;
+  currentLocationName: string | null;
 
   distance: number | null;
   hasReachedDestination: boolean;
@@ -25,6 +19,7 @@ interface Props {
 
 const TrackingCard = ({
   currentLocation,
+  currentLocationName,
   distance,
   hasReachedDestination,
   isTracking,
@@ -39,23 +34,13 @@ const TrackingCard = ({
         <View style={styles.metric}>
           <Text>Current Location</Text>
 
-          <Text>
-            {formatCoordinate(
-              currentLocation?.latitude
-            )}
-            ,
-            {formatCoordinate(
-              currentLocation?.longitude
-            )}
-          </Text>
+          <Text>{currentLocationName ?? "Searching current place..."}</Text>
         </View>
 
         <View style={styles.metric}>
           <Text>Distance Left</Text>
 
-          <Text>
-            {formatDistance(distance)}
-          </Text>
+          <Text>{formatDistance(distance)}</Text>
         </View>
       </View>
 
@@ -63,10 +48,10 @@ const TrackingCard = ({
         {hasReachedDestination
           ? "You are already inside destination radius."
           : isTracking
-          ? "Live tracking active."
-          : selectedDestination
-          ? `Alert triggers within ${radius} meters`
-          : "Select destination first"}
+            ? "Live tracking active."
+            : selectedDestination
+              ? `Alert triggers within ${radius} meters`
+              : "Select destination first"}
       </Text>
     </>
   );

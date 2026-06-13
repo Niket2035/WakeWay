@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { prepareAlarm, triggerAlarm } from "../services/alarmService";
 import {
-    getCurrentLocation,
-    requestLocationPermission,
+  getCurrentLocation,
+  getCurrentLocationName,
+  requestLocationPermission,
 } from "../services/locationService";
 import { DestinationResult, TrackerLocation } from "../types/location";
 import { calculateDistance } from "../utils/distanceCalculator";
@@ -22,6 +23,7 @@ type UseLocationTrackerOptions = {
 
 type UseLocationTrackerReturn = {
   currentLocation: TrackerLocation | null;
+  currentLocationName: string | null;
   distance: number | null;
   error: string;
   hasReachedDestination: boolean;
@@ -47,6 +49,9 @@ export const useLocationTracker = (
 
   const [currentLocation, setCurrentLocation] =
     useState<TrackerLocation | null>(null);
+  const [currentLocationName, setCurrentLocationName] = useState<string | null>(
+    null,
+  );
   const [distance, setDistance] = useState<number | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const [hasReachedDestination, setHasReachedDestination] = useState(false);
@@ -87,6 +92,12 @@ export const useLocationTracker = (
     return remainingDistance;
   };
 
+  const updateLocationName = async (location: TrackerLocation) => {
+    const locationName = await getCurrentLocationName(location);
+    console.log("Updated location name:", locationName);
+    setCurrentLocationName(locationName);
+  };
+
   const syncCurrentLocation = async (): Promise<TrackerLocation | null> => {
     const permissionGranted = await requestLocationPermission();
 
@@ -104,6 +115,7 @@ export const useLocationTracker = (
 
     setError("");
     updateDistanceFromLocation(location);
+    void updateLocationName(location);
 
     return location;
   };
@@ -122,6 +134,7 @@ export const useLocationTracker = (
     };
 
     const remainingDistance = updateDistanceFromLocation(userLocation);
+    void updateLocationName(userLocation);
 
     if (
       remainingDistance !== null &&
@@ -262,6 +275,7 @@ export const useLocationTracker = (
 
   return {
     currentLocation,
+    currentLocationName,
     distance,
     error,
     hasReachedDestination,
